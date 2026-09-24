@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,9 +33,11 @@ function renderFilters(query: Partial<RequestQuery> = {}) {
  *  debounce with fake timers, which userEvent's own internal delays deadlock on. */
 function typeSearch(text: string) {
   const input = screen.getByLabelText('Search');
-  for (let length = 1; length <= text.length; length += 1) {
-    fireEvent.change(input, { target: { value: text.slice(0, length) } });
-  }
+  act(() => {
+    for (let length = 1; length <= text.length; length += 1) {
+      fireEvent.change(input, { target: { value: text.slice(0, length) } });
+    }
+  });
 }
 
 beforeEach(() => {
@@ -57,7 +59,9 @@ describe('search', () => {
     typeSearch('printer');
     expect(push).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(400);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
 
     expect(push).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith('/requests?search=printer');
@@ -67,13 +71,19 @@ describe('search', () => {
     renderFilters();
 
     typeSearch('prin');
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
     typeSearch('printer');
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
 
     expect(push).not.toHaveBeenCalled();
 
-    await vi.advanceTimersByTimeAsync(200);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+    });
     expect(push).toHaveBeenCalledTimes(1);
     expect(push).toHaveBeenCalledWith('/requests?search=printer');
   });
@@ -82,7 +92,9 @@ describe('search', () => {
     renderFilters({ status: 'OPEN', page: 5 });
 
     typeSearch('lift');
-    await vi.advanceTimersByTimeAsync(400);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
 
     expect(push).toHaveBeenCalledWith('/requests?search=lift&status=OPEN');
   });
@@ -90,8 +102,12 @@ describe('search', () => {
   it('clears the search when the box is emptied', async () => {
     renderFilters({ search: 'printer' });
 
-    fireEvent.change(screen.getByLabelText('Search'), { target: { value: '' } });
-    await vi.advanceTimersByTimeAsync(400);
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Search'), { target: { value: '' } });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(400);
+    });
 
     expect(push).toHaveBeenCalledWith('/requests');
   });
